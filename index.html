@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>SOLSTICE DEFENSE — Hold the Last Light</title>
+<title>SOLSTICE DEFENSE — Let Your Light Be Seen</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Orbitron:wght@600;800;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -53,6 +53,10 @@
   button.play:hover,button.play:active{transform:scale(1.05);box-shadow:0 0 70px rgba(255,212,121,.9),inset 0 1px 0 rgba(255,255,255,.4);}
   .hint{font-size:clamp(10px,1.7vw,12px);opacity:.5;margin-top:clamp(16px,3vw,22px);letter-spacing:.5px;}
   .turing{font-size:clamp(9px,1.5vw,11px);opacity:.42;margin-top:clamp(10px,2vw,16px);max-width:min(90vw,480px);line-height:1.6;font-style:italic;}
+  /* Pride rainbow text */
+  .title.rainbow{background:linear-gradient(100deg,#ff5b7f,#ff9d3c 20%,#ffd479 38%,#2dffb0 56%,#7ee8ff 74%,#b79cff 92%);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% auto;animation:rbflow 6s linear infinite;filter:drop-shadow(0 0 38px rgba(255,157,60,.4));}
+  @keyframes rbflow{to{background-position:200% center;}}
+  .rb{background:linear-gradient(100deg,#ff5b7f,#ffd479,#2dffb0,#7ee8ff,#b79cff);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700;}
 
   /* Level up */
   #levelup{background:radial-gradient(ellipse at 50% 40%,rgba(18,46,80,.94),rgba(5,3,14,.98));}
@@ -104,14 +108,15 @@
   <!-- Start -->
   <div id="start" class="screen">
     <div class="titlewrap">
-      <div class="title">SOLSTICE<br>DEFENSE</div>
+      <div class="title rainbow">SOLSTICE<br>DEFENSE</div>
     </div>
-    <div class="subtitle">Hold the Last Light</div>
+    <div class="subtitle">Let Your Light Be Seen</div>
     <div class="desc">
-      On the <b>June Solstice</b> — the longest day of the year — the <span class="p">Devouring Dark</span>
-      rains down to snuff out the sun. You command the last <b>Solar Beacon</b>.<br><br>
-      <b>Aim with mouse / finger</b> to fire. Shatter the falling shades before they reach you.
-      Clear each stage to <span class="c">LEVEL UP</span>. Every 3rd stage, a <span class="p">BOSS</span> descends from the dark.
+      It's <b>June</b> — the <b>solstice</b> brings the longest day, and <span class="rb">Pride</span> lights up the world.
+      But the <span class="p">Devouring Dark</span> rains down to erase every color and silence every spark.
+      You hold the last <b>Prism Beacon</b>.<br><br>
+      <b>Aim with mouse / finger</b> to fire your spectrum. Shatter the shades before they dim your light.
+      Clear each stage to <span class="c">LEVEL UP</span>. Every 3rd stage, a <span class="p">BOSS</span> rises from the dark.
     </div>
     <div class="legend">
       <span><span class="dot" style="color:#9a8cff;background:#9a8cff"></span>Shade</span>
@@ -121,7 +126,7 @@
     </div>
     <button class="play" onclick="startGame()">IGNITE THE BEACON</button>
     <div class="hint">🖱️ Aim & auto-fire &nbsp;·&nbsp; 📱 Drag to aim</div>
-    <div class="turing">The Railgun is named for Alan Turing — born June 1912 — whose code-breaking pierced the darkness of an age.</div>
+    <div class="turing">The Railgun is named for Alan Turing — born June 1912 — whose code-breaking pierced the darkness of an age, and who was persecuted for being gay. This Pride, every beam you fire is a color the dark tried to erase. 🌈</div>
   </div>
 
   <!-- Level up -->
@@ -168,9 +173,12 @@ let stage,gold,hp,maxHp,running,paused,lastTime,acc;
 let aimX,aimY,shake,spawnQueue,spawnT,killCount,stageGoal;
 let combo,comboTimer,muzzle,screenHue;
 let railT=0,novaT=0,fireT=0;
+// Pride flag spectrum — cycled through every Solar Beam bolt
+const PRIDE=['255,38,38','255,140,0','255,210,0','0,200,80','0,140,255','140,80,255'];
+let PRIDE_I=0;
 let weapons;
 const WD={
-  beam:{name:'Solar Beam',tag:'Rapid',ico:'☀️',desc:'Twin bolts of daylight. More streams as it levels.'},
+  beam:{name:'Prism Beam',tag:'Rapid',ico:'🌈',desc:'Rapid bolts cycling through every color of the spectrum. More streams as it levels.'},
   nova:{name:'Gravity Nova',tag:'Area',ico:'🌀',desc:'Pulsing shockwaves crush all nearby shades.'},
   rail:{name:'Turing Railgun',tag:'Pierce',ico:'⚡',desc:'A code-breaking slug that rips through a whole line.'},
   repair:{name:'Beacon Plating',tag:'Defense',ico:'🛡️',desc:'Restore integrity and raise max beacon health.'},
@@ -179,7 +187,7 @@ const WD={
 function reset(){
   beacon={x:W/2,y:H-clamp(60,H*0.1,90),r:clamp(20,W*0.035,30),pulse:0};
   enemies=[];bullets=[];parts=[];boss=null;beams=[];dust=[];
-  stage=1;gold=0;maxHp=100;hp=100;
+  stage=1;gold=0;maxHp=120;hp=120;
   aimX=W/2;aimY=H*0.32;
   spawnT=0;shake=0;killCount=0;combo=0;comboTimer=0;muzzle=0;screenHue=0;acc=0;
   railT=0;novaT=0;fireT=0;
@@ -192,20 +200,22 @@ function reset(){
 function beginStage(){
   paused=false;enemies=[];boss=null;killCount=0;screenHue=stage*18;
   if(stage%3===0){spawnBoss();stageGoal=1;spawnQueue=0;}
-  else{stageGoal=8+stage*3;spawnQueue=stageGoal;}
+  else{stageGoal=Math.round(9+Math.min(stage,15)*2.4+Math.max(0,stage-15)*1.5);spawnQueue=stageGoal;}
   spawnT=.6;
 }
 
 // ===== Spawning =====
 function spawnEnemy(){
-  const t=Math.random();let type='rock',r=clamp(13,W*0.022,18),hpv=2+stage*.85,sp=.5+stage*.08+Math.random()*.4;
-  if(t<.2&&stage>=2){type='swift';r=clamp(9,W*0.016,13);hpv=1+stage*.4;sp=1.3+stage*.13;}
-  else if(t<.35&&stage>=3){type='heavy';r=clamp(20,W*0.034,28);hpv=7+stage*1.7;sp=.32+stage*.04;}
+  const t=Math.random();const sf=stage+Math.max(0,stage-18)*0.7;// soft-capped difficulty curve
+  let type='rock',r=clamp(13,W*0.022,18),hpv=3+sf*0.8,sp=.55+Math.min(stage,18)*.06+Math.random()*.4;
+  if(t<.24&&stage>=2){type='swift';r=clamp(9,W*0.016,13);hpv=2+sf*.42;sp=1.4+Math.min(stage,18)*.1;}
+  else if(t<.42&&stage>=3){type='heavy';r=clamp(20,W*0.034,28);hpv=8+sf*1.5;sp=.38+Math.min(stage,18)*.035;}
   enemies.push({x:30+Math.random()*(W-60),y:-30,r,hp:hpv,maxHp:hpv,sp,type,wob:Math.random()*6.28,rot:Math.random()*6.28,vr:(Math.random()-.5)*.1,flash:0});
 }
 function spawnBoss(){
   const r=clamp(55,W*0.13,85);
-  boss={x:W/2,y:clamp(100,H*0.18,150),r,hp:60+stage*32,maxHp:60+stage*32,t:0,fireT:1.6,flash:0};
+  const bhp=80+Math.min(stage,24)*38+Math.max(0,stage-24)*45;
+  boss={x:W/2,y:clamp(100,H*0.18,150),r,hp:bhp,maxHp:bhp,t:0,fireT:1.5,shotT:2.4,flash:0};
   blip(60,1.4,'sawtooth',.18);noise(.8,.12);flashScreen(.5);
 }
 
@@ -219,11 +229,11 @@ cv.addEventListener('touchstart',e=>{const t=e.touches[0];setAim(t.clientX,t.cli
 function fire(dt){
   const bx=beacon.x,by=beacon.y-beacon.r,ang=Math.atan2(aimY-by,aimX-bx);
   // BEAM
-  if(weapons.beam>0){fireT-=dt;if(fireT<=0){const n=weapons.beam>=4?3:weapons.beam>=2?2:1;for(let i=0;i<n;i++){const a=ang+(i-(n-1)/2)*0.07;bullets.push({x:bx,y:by,vx:Math.cos(a)*13,vy:Math.sin(a)*13,r:clamp(3,W*0.005,5),dmg:1.5+weapons.beam*.8,type:'beam',life:1.5,trail:[]});}muzzle=1;blip(720+Math.random()*60,.04,'square',.04);fireT=Math.max(.07,.14-weapons.beam*.008);}}
+  if(weapons.beam>0){fireT-=dt;if(fireT<=0){const n=weapons.beam>=4?3:weapons.beam>=2?2:1;for(let i=0;i<n;i++){const a=ang+(i-(n-1)/2)*0.07;PRIDE_I=(PRIDE_I+1)%PRIDE.length;bullets.push({x:bx,y:by,vx:Math.cos(a)*13,vy:Math.sin(a)*13,r:clamp(3,W*0.005,5),dmg:1.8+weapons.beam*1.1,type:'beam',life:1.5,trail:[],col:PRIDE[PRIDE_I]});}muzzle=1;blip(720+Math.random()*60,.04,'square',.04);fireT=Math.max(.12,.23-weapons.beam*.012);}}
   // RAIL
-  if(weapons.rail>0){railT-=dt;if(railT<=0){bullets.push({x:bx,y:by,vx:Math.cos(ang)*22,vy:Math.sin(ang)*22,r:clamp(5,W*0.009,8),dmg:3+weapons.rail*2.6,type:'rail',pierce:true,hit:[],life:2,trail:[]});muzzle=1.4;blip(200,.2,'sawtooth',.13);noise(.15,.06);railT=Math.max(.5,1.5-weapons.rail*.2);}}
+  if(weapons.rail>0){railT-=dt;if(railT<=0){bullets.push({x:bx,y:by,vx:Math.cos(ang)*22,vy:Math.sin(ang)*22,r:clamp(5,W*0.009,8),dmg:4+weapons.rail*3.4,type:'rail',pierce:true,hit:[],life:2,trail:[]});muzzle=1.4;blip(200,.2,'sawtooth',.13);noise(.15,.06);railT=Math.max(.7,1.9-weapons.rail*.22);}}
   // NOVA
-  if(weapons.nova>0){novaT-=dt;if(novaT<=0){const rad=clamp(90,W*0.16,150)+weapons.nova*32;parts.push({nova:true,x:bx,y:by,r:12,maxR:rad,life:1});[...enemies,boss].forEach(en=>{if(en&&Math.hypot(en.x-bx,en.y-by)<rad){hitEnemy(en,2.5+weapons.nova*1.6,en.x,en.y);}});blip(110,.45,'triangle',.12);novaT=Math.max(1.5,3-weapons.nova*.22);}}
+  if(weapons.nova>0){novaT-=dt;if(novaT<=0){const rad=clamp(90,W*0.16,150)+weapons.nova*32;parts.push({nova:true,x:bx,y:by,r:12,maxR:rad,life:1});[...enemies,boss].forEach(en=>{if(en&&Math.hypot(en.x-bx,en.y-by)<rad){hitEnemy(en,3.5+weapons.nova*2.1,en.x,en.y);}});blip(110,.45,'triangle',.12);novaT=Math.max(1.8,3.5-weapons.nova*.24);}}
 }
 
 function spark(x,y,c,n,sp=4){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=1+Math.random()*sp;parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,color:c,r:2+Math.random()*3});}}
@@ -256,19 +266,21 @@ function update(dt){
   dust.forEach(d=>{d.y+=d.vy;d.x+=Math.sin(d.y*0.02)*.2;if(d.y<-5){d.y=H+5;d.x=Math.random()*W;}});
 
   // spawn
-  if(boss===null&&stage%3!==0){spawnT-=dt;if(spawnT<=0&&spawnQueue>0){spawnEnemy();spawnQueue--;spawnT=Math.max(.28,1.1-stage*.04);}}
+  if(boss===null&&stage%3!==0){spawnT-=dt;if(spawnT<=0&&spawnQueue>0){spawnEnemy();spawnQueue--;if(stage>=6&&spawnQueue>0&&Math.random()<0.25){spawnEnemy();spawnQueue--;}spawnT=Math.max(.3,1-Math.min(stage,16)*.035);}}
 
   // enemies
   for(let i=enemies.length-1;i>=0;i--){const en=enemies[i];en.wob+=dt*3;en.rot+=en.vr;if(en.flash>0)en.flash-=dt;en.y+=en.sp*60*dt;en.x+=Math.cos(en.wob)*.5;
-    if(en.y>beacon.y-beacon.r-6){hp-=en.type==='heavy'?14:en.type==='swift'?5:8;spark(en.x,en.y,'255,80,80',18,5);blip(150,.3,'sawtooth',.14);noise(.2,.08);shake=.35;flashScreen(.25);enemies.splice(i,1);combo=0;if(hp<=0){hp=0;return gameOver();}}}
+    if(en.y>beacon.y-beacon.r-6){hp-=en.type==='heavy'?15:en.type==='swift'?5:8;spark(en.x,en.y,'255,80,80',18,5);blip(150,.3,'sawtooth',.14);noise(.2,.08);shake=.35;flashScreen(.25);enemies.splice(i,1);combo=0;if(hp<=0){hp=0;return gameOver();}}}
 
   // boss
-  if(boss){boss.t+=dt;if(boss.flash>0)boss.flash-=dt;boss.x=W/2+Math.sin(boss.t*.6)*(W*0.3);boss.fireT-=dt;
-    if(boss.fireT<=0){for(let k=0;k<3;k++)enemies.push({x:boss.x+(Math.random()-.5)*120,y:boss.y+boss.r*.7,r:clamp(10,W*0.018,14),hp:2+stage*.5,maxHp:2+stage*.5,sp:.7+Math.random()*.5,type:'spawn',wob:Math.random()*6.28,rot:0,vr:(Math.random()-.5)*.1,flash:0});boss.fireT=2.2;blip(100,.3,'sawtooth',.1);}}
+  if(boss){boss.t+=dt;if(boss.flash>0)boss.flash-=dt;boss.x=W/2+Math.sin(boss.t*.6)*(W*0.3);boss.fireT-=dt;boss.shotT-=dt;
+    if(boss.fireT<=0){const swarm=2+Math.floor(stage/4);for(let k=0;k<swarm;k++)enemies.push({x:boss.x+(Math.random()-.5)*140,y:boss.y+boss.r*.7,r:clamp(10,W*0.018,14),hp:3+stage*.55,maxHp:3+stage*.55,sp:.85+Math.random()*.5,type:'spawn',wob:Math.random()*6.28,rot:0,vr:(Math.random()-.5)*.1,flash:0});boss.fireT=Math.max(1.6,2.6-Math.min(stage,18)*.05);blip(100,.3,'sawtooth',.1);}
+    if(boss.shotT<=0){const aimAng=Math.atan2((beacon.y-beacon.r)-boss.y,beacon.x-boss.x);const spread=stage>=12?3:1;for(let s=0;s<spread;s++){const sa=aimAng+(s-(spread-1)/2)*0.2;bullets.push({x:boss.x,y:boss.y+boss.r*.6,vx:Math.cos(sa)*3.6,vy:Math.sin(sa)*3.6,r:clamp(7,W*0.013,11),enemy:true,dmg:11,life:7,trail:[]});}boss.shotT=Math.max(1.8,3-Math.min(stage,18)*.06);blip(80,.4,'sawtooth',.14);noise(.2,.07);}}
 
   // bullets
   for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];b.trail.unshift({x:b.x,y:b.y});if(b.trail.length>6)b.trail.pop();b.x+=b.vx;b.y+=b.vy;b.life-=dt;
-    if(b.life<=0||b.x<-30||b.x>W+30||b.y<-30){bullets.splice(i,1);continue;}
+    if(b.life<=0||b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){bullets.splice(i,1);continue;}
+    if(b.enemy){const dd=Math.hypot(b.x-beacon.x,b.y-(beacon.y-beacon.r));if(dd<beacon.r+b.r){hp-=b.dmg;spark(b.x,b.y,'255,70,90',20,5);blip(140,.35,'sawtooth',.15);noise(.25,.09);shake=.45;flashScreen(.3);bullets.splice(i,1);combo=0;if(hp<=0){hp=0;return gameOver();}}continue;}
     let consumed=false;const tg=boss?[boss,...enemies]:enemies;
     for(const en of tg){if(b.pierce&&b.hit.includes(en))continue;if(Math.hypot(en.x-b.x,en.y-b.y)<en.r+b.r){hitEnemy(en,b.dmg,b.x,b.y);if(b.pierce)b.hit.push(en);else{consumed=true;break;}}}
     if(consumed)bullets.splice(i,1);
@@ -314,8 +326,9 @@ function draw(){
 
   // bullets
   bullets.forEach(b=>{
+    if(b.enemy){b.trail.forEach((t,i)=>{ctx.globalAlpha=(1-i/b.trail.length)*.5;ctx.fillStyle='rgba(255,60,90,1)';ctx.beginPath();ctx.arc(t.x,t.y,b.r*(1-i/b.trail.length),0,6.28);ctx.fill();});ctx.globalAlpha=1;ctx.shadowBlur=16;ctx.shadowColor='#ff3b5c';ctx.fillStyle='#ffdce3';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.28);ctx.fill();ctx.fillStyle='#ff3b5c';ctx.beginPath();ctx.arc(b.x,b.y,b.r*.55,0,6.28);ctx.fill();ctx.shadowBlur=0;return;}
     if(b.type==='rail'){ctx.shadowBlur=16;ctx.shadowColor='#7ee8ff';ctx.strokeStyle='rgba(150,235,255,.95)';ctx.lineWidth=b.r;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.vx*1.6,b.y-b.vy*1.6);ctx.stroke();ctx.shadowBlur=0;}
-    else{b.trail.forEach((t,i)=>{ctx.globalAlpha=(1-i/b.trail.length)*.5;ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(t.x,t.y,b.r*(1-i/b.trail.length),0,6.28);ctx.fill();});ctx.globalAlpha=1;ctx.shadowBlur=10;ctx.shadowColor='#ffd479';ctx.fillStyle='#fff6dc';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.28);ctx.fill();ctx.shadowBlur=0;}
+    else{const col=b.col||'255,212,121';b.trail.forEach((t,i)=>{ctx.globalAlpha=(1-i/b.trail.length)*.5;ctx.fillStyle=`rgb(${col})`;ctx.beginPath();ctx.arc(t.x,t.y,b.r*(1-i/b.trail.length),0,6.28);ctx.fill();});ctx.globalAlpha=1;ctx.shadowBlur=12;ctx.shadowColor=`rgb(${col})`;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.28);ctx.fill();ctx.shadowBlur=0;}
   });
 
   // sparks
@@ -369,8 +382,11 @@ function drawAim(){
 function drawBeacon(){
   const bx=beacon.x,by=beacon.y,gr=clamp(70,W*0.13,100)*(1+Math.sin(beacon.pulse)*.05+muzzle*.3);
   const gg=ctx.createRadialGradient(bx,by-beacon.r,0,bx,by-beacon.r,gr);gg.addColorStop(0,'rgba(255,247,215,.95)');gg.addColorStop(.3,'rgba(255,200,90,.6)');gg.addColorStop(1,'rgba(255,120,50,0)');ctx.fillStyle=gg;ctx.beginPath();ctx.arc(bx,by-beacon.r,gr,0,6.28);ctx.fill();
-  // shield
-  ctx.strokeStyle=`rgba(45,255,176,${.5+Math.sin(beacon.pulse*1.5)*.2})`;ctx.lineWidth=clamp(3,W*0.006,5);ctx.shadowBlur=12;ctx.shadowColor='#2dffb0';ctx.beginPath();ctx.arc(bx,by-beacon.r*.5,beacon.r*1.7,Math.PI*1.15,Math.PI*1.85);ctx.stroke();ctx.shadowBlur=0;
+  // prism shield — six-band rainbow arc
+  const sr=beacon.r*1.7,a0=Math.PI*1.13,a1=Math.PI*1.87,band=(a1-a0)/6;
+  ctx.lineWidth=clamp(3,W*0.006,5);
+  for(let i=0;i<6;i++){ctx.strokeStyle=`rgba(${PRIDE[i]},${.55+Math.sin(beacon.pulse*1.5)*.2})`;ctx.shadowBlur=10;ctx.shadowColor=`rgb(${PRIDE[i]})`;ctx.beginPath();ctx.arc(bx,by-beacon.r*.5,sr-i*2.5,a0+i*band,a0+(i+1)*band+.02);ctx.stroke();}
+  ctx.shadowBlur=0;
   // cannon base
   ctx.fillStyle='rgba(35,55,75,.95)';ctx.beginPath();ctx.moveTo(bx-beacon.r*.6,by+beacon.r*.7);ctx.lineTo(bx-beacon.r*.4,by-beacon.r*.3);ctx.lineTo(bx+beacon.r*.4,by-beacon.r*.3);ctx.lineTo(bx+beacon.r*.6,by+beacon.r*.7);ctx.closePath();ctx.fill();
   // barrel toward aim
@@ -403,19 +419,20 @@ function loop(now){
 // ===== Stage clear =====
 function stageClear(){
   paused=true;chord([523,659,784,1047],.4,'sine',.1);flashScreen(.3);
+  hp=Math.min(maxHp,hp+12);// small flat heal reward for clearing
   document.getElementById('lu-stage').textContent=`Stage ${stage} cleared · pick an upgrade`;
   const keys=Object.keys(WD).sort(()=>Math.random()-.5).slice(0,3);
   const el=document.getElementById('cards');el.innerHTML='';
-  keys.forEach(k=>{const d=WD[k];const cur=k==='repair'?0:(weapons[k]||0);const lv=k==='repair'?'+40 HP & MAX':(cur>0?`Lv.${cur} → Lv.${cur+1}`:'★ NEW WEAPON');const c=document.createElement('div');c.className='card';c.innerHTML=`<div class="ico">${d.ico}</div><div class="cname">${d.name}</div><div class="ctag">${d.tag}</div><div class="cdesc">${d.desc}</div><div class="clv">${lv}</div>`;c.onclick=()=>chooseUpgrade(k);el.appendChild(c);});
+  keys.forEach(k=>{const d=WD[k];const cur=k==='repair'?0:(weapons[k]||0);const lv=k==='repair'?'+60 HP & +30 MAX':(cur>0?`Lv.${cur} → Lv.${cur+1}`:'★ NEW WEAPON');const c=document.createElement('div');c.className='card';c.innerHTML=`<div class="ico">${d.ico}</div><div class="cname">${d.name}</div><div class="ctag">${d.tag}</div><div class="cdesc">${d.desc}</div><div class="clv">${lv}</div>`;c.onclick=()=>chooseUpgrade(k);el.appendChild(c);});
   document.getElementById('levelup').classList.remove('hidden');
 }
-function chooseUpgrade(k){if(k==='repair'){maxHp+=40;hp=Math.min(maxHp,hp+40);}else weapons[k]=(weapons[k]||0)+1;blip(740,.12,'square',.1);chord([660,880],.15,'sine',.08);document.getElementById('levelup').classList.add('hidden');stage++;beginStage();lastTime=performance.now();acc=0;requestAnimationFrame(loop);}
+function chooseUpgrade(k){if(k==='repair'){maxHp+=30;hp=Math.min(maxHp,hp+60);}else weapons[k]=(weapons[k]||0)+1;blip(740,.12,'square',.1);chord([660,880],.15,'sine',.08);document.getElementById('levelup').classList.add('hidden');stage++;beginStage();lastTime=performance.now();acc=0;requestAnimationFrame(loop);}
 
 function togglePause(){if(!running)return;paused=!paused;document.getElementById('pausebtn').textContent=paused?'▶':'⏸';if(!paused){lastTime=performance.now();acc=0;requestAnimationFrame(loop);}}
 
 function startGame(){if(actx&&actx.state==='suspended')actx.resume();audio();resize();['start','over','levelup'].forEach(id=>document.getElementById(id).classList.add('hidden'));document.getElementById('pausebtn').textContent='⏸';reset();running=true;paused=false;lastTime=performance.now();acc=0;requestAnimationFrame(loop);}
 
-function gameOver(){running=false;document.getElementById('final').textContent=stage;let v;if(stage>=12)v='ETERNAL DAWN. The dark never came close. Turing-tier defense. ☀️';else if(stage>=7)v='Master Keeper — your beacon blazed through wave after wave.';else if(stage>=4)v='Solid stand. The light held longer than most.';else v='The dark broke through early… upgrade smarter next run.';document.getElementById('verdict').textContent=v;document.getElementById('over').classList.remove('hidden');}
+function gameOver(){running=false;document.getElementById('final').textContent=stage;let v;if(stage>=30)v='ETERNAL DAWN. You reached the solstice itself. Every color blazed eternal. 🌈☀️';else if(stage>=20)v='Beacon of Pride — your spectrum held against impossible dark. Legendary.';else if(stage>=12)v='Master Keeper — wave after wave fell to your light.';else if(stage>=6)v='Solid stand. Your colors shone bright. Push deeper next run.';else v='The dark dimmed you early… but light always returns. Try again.';document.getElementById('verdict').textContent=v;document.getElementById('over').classList.remove('hidden');}
 
 resize();
 </script>
